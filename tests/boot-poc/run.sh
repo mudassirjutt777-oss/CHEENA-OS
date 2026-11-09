@@ -214,6 +214,11 @@ EOF
   log "install boot loader to the image ESP (removable path, no NVRAM)"
   try "grub-install" in_chroot grub-install --target=x86_64-efi --efi-directory=/boot/efi --boot-directory=/boot \
       --removable --no-nvram --uefi-secure-boot || return 1
+  # With --removable, Ubuntu installs the CD-style GRUB image, which looks for
+  # /.disk/info and /boot/grub and ignores a grub.cfg next to itself (seen in CI:
+  # it dropped to a grub> prompt). Use the normal signed image instead; it reads
+  # EFI/ubuntu/grub.cfg on the ESP, as on an installed system.
+  try "install signed grubx64.efi" cp "$MNT/usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed" "$MNT/boot/efi/EFI/BOOT/grubx64.efi" || return 1
   for d in BOOT ubuntu; do
     mkdir -p "$MNT/boot/efi/EFI/$d"
     printf 'search.fs_uuid %s root\nset prefix=($root)/grub\nconfigfile $prefix/grub.cfg\n' "$BOOT_UUID" > "$MNT/boot/efi/EFI/$d/grub.cfg"

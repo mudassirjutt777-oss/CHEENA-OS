@@ -22,6 +22,8 @@ BAD = [
     (b"Kernel panic", "panic"),
     (b"ALERT!", "initramfs-alert"),
     (b"(initramfs)", "initramfs-shell"),
+    (b"grub> ", "grub-prompt"),
+    (b"grub rescue>", "grub-rescue"),
 ]
 
 
