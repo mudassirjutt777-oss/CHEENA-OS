@@ -1,0 +1,1080 @@
+CHEENA OS
+MASTER ENGINEERING WORKFLOW
+First Workable Release — Linux-Based, AI-Optional, Data-First Operating System
+Prepared: 9 November 2026
+Primary implementation agent: Claude Code Cloud
+Document status: Engineering starting blueprint — architecture decisions must be validated before destructive implementation.
+
+======================================================================
+0. PURPOSE AND HOW TO USE THIS DOCUMENT
+======================================================================
+
+This document is the current consolidated source of truth for starting CHEENA OS development. It combines the previously agreed product direction with the later decisions about secure data recovery, application restoration, optional AI, modern AI-native capabilities, and Claude Code Cloud workflow.
+
+The goal is a real, bootable, installable Linux-based operating system distribution—not a desktop mockup, a web dashboard, a Windows application, or a collection of non-functional buttons.
+
+Give this entire file to Claude Code Cloud in a GitHub repository. Claude Code must first inspect the repository and environment, then create a technical plan and a small, testable project foundation. It must NOT attempt to build every feature in one task.
+
+Important reality:
+- A first release can be genuinely usable, but cannot be guaranteed bug-free.
+- A cloud coding agent can create code, configuration, scripts, tests and possibly build an ISO in its VM. It cannot prove compatibility with every physical PC.
+- Final hardware validation requires booting and testing the ISO on actual computers.
+- No operating system can guarantee data survival after every possible event. Encryption, snapshots, backups and recovery solve different problems.
+- Do not claim a feature works until it has implementation, tests and evidence.
+
+======================================================================
+1. PRODUCT VISION AND NON-NEGOTIABLE PRINCIPLES
+======================================================================
+
+Product name: CHEENA OS
+
+Product direction:
+A modern Linux-based desktop operating system with its own identity, a carefully designed desktop experience, integrated but optional AI, strong security, reliable data protection, useful system intelligence and a future application/developer ecosystem.
+
+Core principles:
+1. User control: the user remains in control of the computer and its data.
+2. AI optionality: AI can be disabled completely. Core OS functions must continue normally.
+3. Privacy by design: collect the minimum data necessary; make recording, indexing, cloud use and telemetry explicit and controllable.
+4. Data-first design: protect personal data from system failures, failed updates and supported reinstall paths.
+5. Security by default: least privilege, encryption, signed updates, sandboxing and clear permissions.
+6. Honest compatibility: never promise all Windows, macOS, Android or professional applications will work.
+7. Functional completeness: no fake controls, placeholder metrics presented as real, or buttons with no working behavior.
+8. Accessibility: keyboard navigation, screen readers, contrast, scaling and localization must be considered from the beginning.
+9. Offline resilience: basic OS, files, settings, recovery and local tools must work without internet or AI.
+10. Maintainability: prefer mature upstream components and documented interfaces over unnecessary custom low-level code.
+
+Branding:
+- Name: CHEENA OS.
+- Use the brand selectively: boot, installer, About, system identity and official applications.
+- Do not put CHEENA OS branding on every card, title bar or screen.
+- Create a recognizable visual language without copying Windows, macOS or ChromeOS.
+- Keep the desktop familiar enough for PC users to learn quickly.
+- A taskbar/dock may exist initially, but its design and behavior should be distinctive and customizable.
+- Avoid copying the traditional Windows system tray layout exactly.
+- AI entry point should be discreet, contextual and user-controllable.
+
+======================================================================
+2. CONFIRMED PRODUCT REQUIREMENTS
+======================================================================
+
+2.1 Linux foundation
+- Build CHEENA OS as a Linux distribution using a mature upstream base.
+- Do not write a new kernel.
+- Do not fork the Linux kernel unless a demonstrated technical need justifies it.
+- Track upstream patches, kernel versions, security advisories and licenses.
+- Maintain a reproducible build process and a documented software bill of materials.
+
+2.2 Desktop and everyday computing
+The first release must provide:
+- Bootable live environment.
+- Installable desktop system.
+- First-run user setup.
+- Login/session handling.
+- Desktop shell, application launcher and taskbar/dock.
+- File manager.
+- Settings application.
+- Network configuration.
+- Audio and display configuration.
+- Bluetooth support where hardware and drivers permit.
+- USB storage support.
+- Software installation/removal through a supported package manager or curated software interface.
+- System update interface.
+- Restart, shutdown, logout and lock.
+- Basic accessibility controls.
+- Useful default applications selected after licensing and maintenance review.
+
+2.3 Five approved core modules
+These are official planned modules, not optional ideas:
+
+A. CHEENA Self-Healing System
+- Detect system integrity problems and failed updates.
+- Diagnose boot and package problems.
+- Offer verified repair or rollback paths.
+- Preserve user data during supported repair operations.
+- Never silently delete user data.
+- Never make speculative repairs to a damaged filesystem.
+- Log actions and provide a recovery route.
+
+B. CHEENA Universal Search
+- Search applications, files, settings, documents and supported indexed content.
+- Support natural-language/semantic search when AI is enabled.
+- Provide a useful conventional search when AI is disabled.
+- Respect file permissions, encrypted locations and excluded folders.
+- Make indexing scope visible and configurable.
+
+C. CHEENA Control Center
+- Central settings for performance, battery, storage, security, network, devices, updates and AI.
+- Every control must be connected to a real system capability.
+- Display unavailable hardware features honestly.
+
+D. CHEENA Smart Performance Manager
+- Monitor CPU, RAM, GPU, storage, thermals and battery where supported.
+- Explain resource usage and identify bottlenecks.
+- Offer recommendations before making changes.
+- Do not kill processes or change power/driver settings without user consent.
+- Never fabricate readings when a sensor is unavailable.
+
+E. CHEENA Developer Mode
+- Terminal access.
+- Development tool installation.
+- SDK and documentation entry points.
+- Containers and virtualization where hardware/kernel support exists.
+- Debug logs and diagnostic exports.
+- Future application packaging and testing tools.
+- Keep developer privileges separate from normal application privileges.
+
+2.4 Storage and data protection
+User-facing storage:
+- Present storage simply, ideally as one main storage space rather than forcing users to manage many fixed-size C/D/E partitions.
+- Let users organize files with folders such as Gaming, Design, Jobs, Business and Personal.
+- Internal technical partitions/subvolumes may exist for boot, system, recovery and data separation.
+- Explain that one user-visible storage pool does not mean the physical disk has no internal structure.
+
+Candidate technical design:
+- EFI System Partition for UEFI boot.
+- Encrypted data/system layout using LUKS2 where supported.
+- Btrfs subvolumes for system, user data and snapshots, subject to validation.
+- Keep personal data logically separate from replaceable OS files.
+- Use stable mount points and documented subvolume naming.
+- Evaluate whether root and home should share one encrypted container or use separate containers; document trade-offs before implementation.
+- Do not assume Btrfs snapshots are backups.
+
+CHEENA Safe Reinstall:
+- Detect an existing CHEENA OS installation.
+- Identify and verify the existing encrypted data volume.
+- Offer a clear “Repair Existing System — Keep Personal Data” route.
+- Require successful authentication before unlocking protected data.
+- Reinstall or replace system files without formatting the preserved user-data area.
+- Show a preflight summary: detected disks, partitions, encrypted volumes, data location, backup status and exact operations.
+- Require explicit confirmation before any operation that can erase or repartition a disk.
+- If the installer cannot confidently identify the correct data volume, STOP and ask for expert/user intervention. Never guess.
+- Offer a separate “Fresh Installation — Erase Everything” path with strong warnings and an additional confirmation.
+- Never imply that a keep-data reinstall protects against physical disk failure.
+
+CHEENA Secure Data Vault:
+- Use full-disk or full-data-volume encryption, not just an installer password prompt.
+- Prefer LUKS2 with a well-reviewed cryptographic configuration, subject to platform validation.
+- Support passphrase-based unlocking.
+- Evaluate TPM2-assisted unlocking carefully; do not make TPM the only recovery route.
+- Generate a separate recovery key during setup.
+- Clearly tell users that losing both passphrase and recovery key may make data unrecoverable.
+- Provide a safe way to export/print/store recovery material outside the PC.
+- Never store the only recovery key unencrypted on the same disk.
+- Never include passphrases, recovery keys or secrets in logs, crash reports, Git commits or cloud prompts.
+- Do not implement a hidden vendor master key or backdoor.
+- Do not silently bypass encryption because a user forgot the password.
+
+Application and profile restoration:
+- Maintain an application restoration manifest containing app identifiers, source/repository, version/channel where relevant, install method, architecture, and restore capability.
+- Keep application binaries separate from personal data and app settings.
+- Reinstall supported applications automatically after a safe reinstall where possible.
+- For apps that cannot be automatically restored, preserve compatible user data/settings and offer restoration when the app is reinstalled.
+- Do not copy old executable binaries blindly into a new OS.
+- Use supported application export/import mechanisms where available.
+- Preserve browser profiles, bookmarks, extensions/settings where technically and legally supported.
+- Protect credentials using the OS keyring and encryption; do not promise saved passwords will work if the original keyring/encryption keys are lost.
+- Preserve game saves, project files, templates and app preferences when supported.
+- Provide per-app restore status: Restorable, Needs reinstall, Incompatible, Not backed up, or Requires sign-in.
+- Never claim an application is restored until launch and data checks pass.
+
+Snapshots and backup:
+- Create snapshots before supported system updates and risky system changes.
+- Provide rollback to a known-good system state.
+- Separate system snapshots from user-data backups.
+- Offer scheduled backups to external drives and optional user-authorized cloud providers.
+- Verify backup integrity and report last successful backup.
+- Make clear that snapshots on the same disk do not protect against disk failure, theft, fire or ransomware with access to the disk.
+- Do not upload personal data to cloud storage without explicit consent.
+- Recovery tools must allow users to copy their data to an external drive when the OS cannot boot.
+
+Emergency Recovery:
+- Provide a recovery environment/USB workflow.
+- Support diagnostics, boot repair, verified system rollback and safe data export.
+- Require encryption credentials before exposing encrypted user data.
+- Make destructive repair a separate, explicit path.
+- Test recovery with simulated boot failure, interrupted update and damaged system files.
+
+2.5 Optional AI and usability
+AI must be optional:
+- Provide a clear setup choice and a persistent global AI on/off control.
+- When disabled, no AI agent, AI background service, microphone capture, screen capture, cloud inference or AI indexing should run.
+- OS search, settings, file management, updates, recovery and security must remain functional.
+- Users may separately control local AI, cloud AI, voice, screen understanding, activity memory, app integrations and automation.
+- No always-on recording by default.
+- No hidden screenshots or activity history.
+- No training on user data without explicit informed consent.
+- Clearly label when information is sent to a cloud model.
+- Provide a way to inspect and delete locally stored AI history/memory.
+
+AI capability roadmap:
+- Text and voice assistant.
+- Context-aware screen understanding, only when invoked/authorized.
+- AI file search and document summaries.
+- Natural-language settings help.
+- Troubleshooting and log explanation.
+- Coding/debugging assistant.
+- Browser and application assistance through supported integrations.
+- Multi-step task agents.
+- Workflow automation.
+- Optional activity timeline/memory with strict opt-in, retention and exclusions.
+- Local model support for basic offline tasks, depending on hardware.
+- Cloud model support for advanced tasks, depending on user configuration.
+- Model/provider abstraction so CHEENA is not locked to one vendor.
+- AI must not have unrestricted root access.
+- Permission levels:
+  1. Read-only.
+  2. Assisted action requiring approval.
+  3. Bounded automation with user-defined scope and limits.
+- Sensitive actions such as deleting files, formatting disks, changing security settings, sending messages, purchasing, publishing or sharing data require explicit confirmation.
+- Every agent action should be auditable and, where possible, reversible.
+- Protect against prompt injection from webpages, documents, emails and other untrusted content. Treat external content as data, not instructions.
+
+2.6 Modern desktop and productivity
+Planned roadmap:
+- Distinctive taskbar/dock and launcher.
+- Virtual workspaces.
+- Window tiling and snapping.
+- Multi-monitor profiles.
+- Focus mode and notification controls.
+- Per-app audio controls.
+- Clipboard history with privacy controls.
+- Quick settings/actions.
+- Context-aware but non-intrusive suggestions.
+- Universal search.
+- Screen capture and recording with visible indicators.
+- File tagging and smart folders.
+- Accessibility and language support.
+- Adaptive layouts for different screen sizes and input devices.
+
+2.7 Security
+- Secure Boot support where possible.
+- Signed system images and update metadata.
+- Least-privilege application model.
+- App sandboxing/portals where supported.
+- Firewall controls.
+- Disk encryption.
+- Security updates and vulnerability response process.
+- Protected secrets/keyring.
+- Permission indicators for microphone, camera, screen and sensitive files.
+- Recovery key management.
+- Secure default settings.
+- Threat modeling for AI agents and application integrations.
+- Independent security review before public stable release.
+- Security logs must not leak secrets.
+- Do not market the OS as “unhackable” or “100% secure”.
+
+2.8 Compatibility and applications
+Compatibility strategy:
+1. Native Linux applications are preferred.
+2. Evaluate Flatpak and/or distro packages for desktop application delivery.
+3. Evaluate Wine for selected Windows applications.
+4. Evaluate Proton primarily for gaming.
+5. Evaluate KVM/QEMU for applications needing a Windows virtual machine.
+6. Evaluate Android runtime options such as Waydroid only after hardware/kernel/support testing.
+7. Web applications are another option.
+8. macOS-only applications are not expected to run natively; do not promise this.
+
+Create a compatibility matrix with:
+- Application name and version.
+- Test hardware/GPU.
+- Installation method.
+- Launch result.
+- Core workflow result.
+- GPU acceleration result.
+- Printing/peripheral result.
+- DRM/anti-cheat limitations.
+- Stability and known issues.
+- Evidence and test date.
+
+2.9 Connectivity roadmap
+- Android companion app.
+- Secure local Wi-Fi connection and optional remote internet connection.
+- Device pairing and revocation.
+- File transfer.
+- Clipboard sync.
+- Notification sync.
+- Remote assistance only with explicit consent.
+- End-to-end encryption for remote data paths.
+- No open unauthenticated network listener.
+- Do not promise full Windows Phone Link parity in the first release.
+
+2.10 Future ecosystem
+- CHEENA App Store/catalog.
+- Developer SDK and APIs.
+- Application signing and verification.
+- Developer documentation.
+- Publishing/review process.
+- Updates and rollback.
+- Clear licensing and revenue policies.
+- App sandbox and permissions.
+- This is a later phase, not a prerequisite for first bootable release.
+
+======================================================================
+3. PROVISIONAL TECHNICAL BASELINE — VALIDATE BEFORE LOCKING
+======================================================================
+
+The following is a recommended starting hypothesis, not an irreversible decision.
+
+3.1 Base distribution
+Recommended candidate: Ubuntu 26.04 LTS (Resolute Raccoon), preferably the 26.04.1 point-release media where appropriate.
+Reason:
+- Current LTS release as of 9 November 2026.
+- Established package ecosystem and hardware support.
+- Long standard support lifecycle.
+- Familiar Debian/Ubuntu packaging and broad documentation.
+- A reasonable base for a first custom desktop distribution.
+
+Do not blindly rebrand an existing desktop image and call it a new OS. Create a reproducible image build with CHEENA packages, branding, defaults, installer configuration and release tests.
+
+Before committing:
+- Compare Ubuntu 26.04 LTS, Debian 13 and Fedora-based options.
+- Review licensing, installer integration, kernel/hardware support, update model, security support, packaging and maintenance workload.
+- Produce a short decision record with evidence.
+- If evidence does not justify a different base, proceed with Ubuntu 26.04 LTS.
+
+3.2 Desktop environment
+Candidate: KDE Plasma on Wayland.
+Reason:
+- Highly configurable and suitable for a distinctive desktop.
+- Mature desktop ecosystem.
+- Can provide a practical base while CHEENA develops its own visual design.
+- Wayland is the preferred modern session; XWayland may support legacy applications.
+
+Do not build a completely custom compositor/window manager for the first release.
+Do not copy KDE defaults unchanged and claim a unique CHEENA desktop. Define CHEENA theme, shell layout, launcher, settings integration and interaction patterns.
+Validate NVIDIA, Intel and AMD graphics behavior separately.
+
+3.3 Kernel and boot
+- Use supported upstream Ubuntu kernel packages initially.
+- UEFI/GPT as the primary supported installation path.
+- Keep legacy BIOS support as a separately assessed compatibility item.
+- Use the base distribution's supported bootloader configuration.
+- Do not patch the kernel without a demonstrated requirement.
+- Test Secure Boot signing and third-party driver interactions.
+
+3.4 Storage
+Candidates:
+- LUKS2 encryption.
+- Btrfs subvolumes and snapshots.
+- EFI System Partition.
+- Separate logical system/data subvolumes.
+- Recovery environment.
+
+Do not finalize partitioning until installer and recovery proof-of-concept tests pass.
+Btrfs snapshots are not backups.
+Test disk-full behavior, interrupted writes, rollback, restore, encryption recovery and filesystem repair.
+
+3.5 Installer
+Evaluate supported installers for the chosen base:
+- Ubuntu's installer stack and supported customization routes.
+- Calamares and its current module/support matrix.
+- Other maintainable upstream installer approaches if justified.
+
+Choose based on:
+- Supported base integration.
+- UEFI/Secure Boot.
+- LUKS2.
+- Btrfs subvolume creation.
+- Existing installation detection.
+- Safe data preservation.
+- Accessibility and localization.
+- Maintainability and license.
+
+Do not implement Safe Reinstall by merely skipping a format checkbox. It requires a tested storage identification and preservation design.
+
+3.6 Applications and package delivery
+- Use base distribution packages for core OS components.
+- Evaluate Flatpak for selected desktop apps and sandboxing.
+- Keep a stable app identity independent of package source.
+- Build an application restore manifest.
+- Do not mix multiple package managers without a clear support policy.
+- Document update ownership and avoid conflicting update mechanisms.
+
+3.7 Core implementation languages
+Use the simplest maintainable technology compatible with selected upstream components.
+Candidates:
+- Python for prototypes, tooling, orchestration and non-privileged utilities.
+- Rust or another memory-safe language for security-sensitive system services where justified.
+- QML/Qt or supported desktop technologies for UI components.
+- Shell scripts only for small, carefully tested build/maintenance tasks.
+Do not choose languages based on novelty. Record the reason for each major choice.
+
+======================================================================
+4. REPOSITORY AND PROJECT STRUCTURE
+======================================================================
+
+Claude Code should inspect any existing repository first. Do not delete or overwrite existing work. If the repository is empty, propose a clean structure such as:
+
+cheena-os/
+  CLAUDE.md
+  README.md
+  LICENSES/
+  docs/
+    product/
+      vision.md
+      requirements.md
+      feature-roadmap.md
+    architecture/
+      architecture-overview.md
+      decisions/
+      storage-and-encryption.md
+      installer-and-recovery.md
+      ai-permissions.md
+      update-and-rollback.md
+      compatibility.md
+    security/
+      threat-model.md
+      security-policy.md
+      vulnerability-reporting.md
+    testing/
+      test-strategy.md
+      hardware-matrix.md
+      release-acceptance.md
+    operations/
+      build-and-release.md
+      backup-and-recovery.md
+  build/
+    image/
+    packages/
+    installer/
+    scripts/
+  system/
+    defaults/
+    services/
+    policies/
+  desktop/
+    theme/
+    shell/
+    launcher/
+    settings/
+  apps/
+    cheena-control-center/
+    cheena-search/
+    cheena-recovery/
+    cheena-ai/
+  services/
+    system-health/
+    update-manager/
+    backup-manager/
+    app-restore/
+  tests/
+    unit/
+    integration/
+    image/
+    installer/
+    recovery/
+    security/
+  packaging/
+  assets/
+  .github/
+    workflows/
+
+This is a proposed organization, not a mandate to create empty folders for every future feature. Add only directories needed for the current milestone.
+
+Keep root CLAUDE.md concise. Put detailed requirements in docs and link to them from CLAUDE.md.
+
+======================================================================
+5. CLAUDE CODE CLOUD WORKFLOW
+======================================================================
+
+5.1 Understand the environment
+Claude Code Cloud runs a task in an isolated cloud environment associated with a GitHub repository. It can inspect and edit repository files, run available commands and tests, and create a branch/pull request. Its VM is not the user's physical PC.
+
+Before doing work:
+- Inspect repository, branch, git status and existing instructions.
+- Inspect available OS, CPU, memory, disk, privileges, virtualization and network access.
+- Check whether nested virtualization, loop devices, mount, chroot, KVM, systemd and ISO tooling are available.
+- Do not assume privileged disk operations or hardware access are available.
+- Identify whether an ISO can be built in this environment.
+- If not possible, create reproducible build scripts and a documented local/CI build route instead.
+- Never pretend a VM-only test proves physical hardware compatibility.
+
+5.2 Token/context efficiency
+- Read only the files needed for the current task.
+- Do not repeatedly dump the whole repository or huge logs.
+- Use concise command output and targeted searches.
+- Keep tasks bounded and create one pull request per coherent milestone.
+- Avoid unnecessary web searches; use official upstream documentation for technical decisions.
+- Keep CLAUDE.md short and stable.
+- Use docs for full specifications.
+- After a long task, summarize decisions, changed files, tests, failures and next action.
+- Use /clear for an unrelated task after saving a useful summary.
+- Use /compact only when continuing the same task and context is becoming large.
+- Use /context, /usage or /cost only if supported by the installed Claude Code version/account.
+- Do not assume all slash commands or usage features are available in every cloud session.
+- Do not run multiple agents on the same files.
+- Parallelize only independent tasks with separate ownership and review.
+- Never reduce test coverage or skip security checks merely to save tokens.
+- Avoid asking Claude to “build the entire OS A to Z in one go”.
+
+5.3 Work in small milestones
+For every task, Claude must:
+1. State the specific goal and acceptance criteria.
+2. Inspect relevant files.
+3. Propose a brief plan.
+4. Implement only the approved scope.
+5. Add/update tests.
+6. Run relevant tests and build checks.
+7. Inspect its own diff.
+8. Report changed files, test results, known limitations and next step.
+9. Commit to a branch and open/update a PR if supported.
+10. Never merge or publish a release without user approval.
+
+5.4 Permission boundaries
+Claude must ask before:
+- Destructive disk, partition, filesystem or bootloader operations.
+- Removing user files or overwriting existing repository work.
+- Installing system-wide packages where the environment requires elevated privileges.
+- Changing signing keys, secrets, credentials or encryption settings.
+- Uploading user data or logs to external services.
+- Publishing packages, releases, images or public repositories.
+- Running commands that can erase or repartition a disk.
+- Making a licensing decision that affects distribution.
+
+Never put passwords, API keys, tokens or recovery keys in source code, prompts, issue comments or logs.
+
+======================================================================
+6. DEVELOPMENT PHASES — FIRST WORKABLE RELEASE
+======================================================================
+
+PHASE 0 — Repository and feasibility audit
+Goal:
+Establish what exists and what the cloud environment can actually do.
+
+Tasks:
+- Inspect repository and git history.
+- Identify current files and prior work.
+- Inspect Claude Code environment capabilities.
+- Check base distribution release and official support.
+- Compare base/desktop/installer/storage candidates.
+- Produce architecture decision records.
+- Identify licensing obligations.
+- Create initial risk register.
+- Create hardware and VM test strategy.
+
+Deliverables:
+- docs/architecture/architecture-overview.md
+- docs/architecture/decisions/
+- docs/security/threat-model.md
+- docs/testing/test-strategy.md
+- docs/operations/build-and-release.md
+
+Acceptance:
+- No existing work lost.
+- Decisions supported by sources.
+- Unknowns explicitly recorded.
+- No fake implementation claims.
+
+PHASE 1 — Reproducible Linux image foundation
+Goal:
+Build a minimal reproducible CHEENA OS live image based on the selected Linux distribution.
+
+Tasks:
+- Create build scripts/configuration.
+- Define package manifest.
+- Apply minimal CHEENA branding.
+- Configure boot process.
+- Produce checksums and build metadata.
+- Generate an ISO if environment permits.
+- Verify ISO integrity and boot in a supported VM.
+
+Acceptance:
+- Build can be repeated from documented steps.
+- ISO boots to a usable live environment.
+- No placeholder claims.
+- Build failures and missing privileges are reported honestly.
+
+PHASE 2 — Desktop foundation
+Goal:
+Create a usable desktop, not a static design.
+
+Tasks:
+- Configure selected desktop environment.
+- Define CHEENA theme, typography, spacing, icons and colors.
+- Implement launcher and taskbar/dock behavior.
+- Configure file manager and settings entry points.
+- Add system status and notifications.
+- Test keyboard, mouse, scaling and accessibility basics.
+
+Acceptance:
+- Login to desktop succeeds.
+- Apps launch and close.
+- Files can be browsed and copied.
+- Network/audio/display settings are functional where hardware supports them.
+- No dead buttons or fake system metrics.
+
+PHASE 3 — Core system management
+Goal:
+Make the OS manageable.
+
+Tasks:
+- Control Center.
+- Universal Search baseline (non-AI).
+- Update manager.
+- System health/diagnostics.
+- Basic performance monitor.
+- Software installation/removal route.
+- Logs and support bundle with sensitive-data filtering.
+
+Acceptance:
+- Settings persist after reboot.
+- Search finds supported apps/files/settings.
+- Updates use trusted signed repositories.
+- Software install/remove has clear status and error handling.
+- Metrics show real readings or explicit “not available”.
+
+PHASE 4 — Secure storage and Data Vault
+Goal:
+Protect user data against unauthorized offline access.
+
+Tasks:
+- Finalize partition/subvolume design.
+- Implement LUKS2 encryption integration.
+- Create passphrase and recovery-key flow.
+- Protect key material and keyring.
+- Implement storage status UI.
+- Document forgotten-password consequences.
+- Test mounting/unlocking in recovery environment.
+- Test recovery key export and validation.
+
+Acceptance:
+- Encrypted data is unreadable when locked.
+- Wrong passphrase does not unlock data.
+- Recovery key works as designed.
+- Secrets never appear in logs.
+- Data remains accessible after normal reboot.
+- Failure cases are documented.
+
+PHASE 5 — Installer and Safe Reinstall
+Goal:
+Install CHEENA OS safely and preserve existing user data when requested.
+
+Tasks:
+- Integrate selected installer.
+- Implement disk discovery and clear disk identity display.
+- Support fresh installation with explicit erase confirmation.
+- Support safe install/repair preserving existing encrypted user data.
+- Authenticate before unlocking old data.
+- Verify filesystem and backup status before proceeding.
+- Prevent formatting preserved data subvolumes.
+- Write transaction logs without secrets.
+- Test interrupted installation and recovery.
+
+Acceptance:
+- Fresh install works in VM.
+- Safe reinstall preserves a known test user's documents and profiles.
+- Installer refuses ambiguous disk layouts.
+- Destructive actions require explicit confirmation.
+- No claim of data preservation unless tested.
+
+PHASE 6 — Recovery, snapshots and backup
+Goal:
+Recover from failed updates and system boot problems.
+
+Tasks:
+- System snapshots before supported updates.
+- Verified rollback path.
+- Emergency Recovery environment.
+- Data export to external storage.
+- Backup scheduler and status.
+- Backup integrity checks.
+- Restore workflow.
+- Simulated failure tests.
+
+Acceptance:
+- Failed update can return to a known-good system state.
+- Recovery environment can unlock and export test data.
+- Backup can be restored and verified.
+- Same-disk snapshots are clearly distinguished from external backups.
+
+PHASE 7 — Application restoration
+Goal:
+Restore the user's application environment safely.
+
+Tasks:
+- Application inventory/restore manifest.
+- Stable application identifiers.
+- Reinstall supported packages from trusted sources.
+- App data backup/restore adapters for selected apps.
+- Status for unsupported/incompatible apps.
+- Browser profile tests.
+- Keyring and credential behavior tests.
+- Game save and project folder tests where relevant.
+
+Acceptance:
+- Selected supported applications reinstall.
+- Their supported user data/settings restore.
+- Unsupported applications are clearly reported.
+- No old executable is copied blindly into the new OS.
+- Credentials are not claimed restored unless tested.
+
+PHASE 8 — Basic CHEENA AI integration
+Goal:
+Provide useful AI while preserving optionality.
+
+Tasks:
+- AI service architecture behind a provider interface.
+- Settings for enable/disable.
+- Local/cloud provider configuration.
+- Basic text assistant.
+- Voice only if supported and user-enabled.
+- Permission manager.
+- Read-only system diagnostics integration.
+- Approval-gated safe actions.
+- Clear AI data controls.
+
+Acceptance:
+- AI can be disabled completely.
+- OS remains usable with AI disabled and offline.
+- No hidden recording or cloud transfer.
+- AI cannot run arbitrary privileged commands.
+- Sensitive actions require approval.
+- Untrusted content cannot silently instruct the agent.
+
+PHASE 9 — Security hardening and compatibility
+Goal:
+Prepare for wider testing.
+
+Tasks:
+- Secure Boot validation.
+- Signed update verification.
+- Firewall defaults.
+- App sandbox/permissions.
+- Dependency and vulnerability scanning.
+- SBOM generation.
+- License inventory.
+- Hardware driver tests.
+- Windows app compatibility matrix for selected apps.
+- Accessibility checks.
+- Independent security review plan.
+
+Acceptance:
+- No known critical security issue left unexplained.
+- Update authenticity is verified.
+- License notices and source obligations are included.
+- Compatibility claims match actual test evidence.
+
+PHASE 10 — Release candidate
+Goal:
+Produce an installable first release candidate.
+
+Tasks:
+- Freeze feature scope.
+- Run full test suite.
+- Test clean install, update, rollback, safe reinstall and recovery.
+- Test with AI enabled and disabled.
+- Test offline behavior.
+- Test multiple display resolutions and at least representative Intel/AMD/NVIDIA hardware where available.
+- Create release notes, known issues and checksums.
+- Publish only after approval.
+
+Acceptance:
+- Release candidate passes documented acceptance tests.
+- No unresolved critical/high severity defects without an explicit release decision.
+- Recovery and data-protection claims have test evidence.
+- ISO can be reproduced from documented source/configuration.
+
+======================================================================
+7. FIRST RELEASE — STRICT MVP SCOPE
+======================================================================
+
+Must be in first workable release:
+- Bootable live ISO.
+- Installable Linux-based CHEENA OS.
+- Working desktop session.
+- Launcher/taskbar/dock.
+- File manager.
+- Control Center baseline.
+- Network, audio and display configuration.
+- Package installation/removal path.
+- Signed system updates through supported upstream mechanism.
+- Basic diagnostics and system health.
+- Encryption setup.
+- Recovery-key flow.
+- Safe Reinstall proof-of-concept with tested data preservation.
+- Emergency recovery/data export path.
+- Basic app restoration manifest.
+- AI optional toggle and basic assistant only if safely integrated.
+- Non-AI OS operation.
+
+May be deferred:
+- Fully autonomous AI agents.
+- Always-on activity timeline.
+- Advanced screen understanding.
+- Universal app compatibility.
+- Full Windows/macOS application compatibility.
+- Full Android integration.
+- Full cloud synchronization service.
+- Public app store and developer marketplace.
+- Advanced self-healing beyond tested recovery/rollback.
+- Custom kernel and custom compositor.
+- Gaming optimization promises.
+- Enterprise management suite.
+
+======================================================================
+8. UI/UX QUALITY RULES
+======================================================================
+
+- Build a consistent design system before creating many screens.
+- Use reusable components and documented spacing/type scales.
+- Avoid over-branding.
+- Avoid copying another OS screen-for-screen.
+- Keep important actions discoverable.
+- Provide keyboard shortcuts and keyboard navigation.
+- Use clear error messages with a safe next step.
+- Destructive actions need plain-language consequences.
+- Never hide critical security or backup state.
+- Provide light/dark themes if feasible without destabilizing the MVP.
+- Support scaling and high-DPI screens.
+- Do not show fake CPU, RAM, battery, network or storage values.
+- No non-functional demo cards in release builds.
+- Provide empty, loading, success, warning and failure states for each major UI.
+- Keep AI suggestions separate from confirmed system facts.
+
+======================================================================
+9. TESTING AND RELEASE QUALITY
+======================================================================
+
+Test levels:
+1. Unit tests for logic.
+2. Integration tests for system services and UI-to-service communication.
+3. Image/build tests.
+4. VM boot/install tests.
+5. Installer destructive-operation safety tests.
+6. Encryption and recovery tests.
+7. Update/rollback tests.
+8. Application restoration tests.
+9. Security tests and dependency scans.
+10. Physical hardware tests.
+
+Minimum test scenarios:
+- Boot live ISO.
+- Install to a blank virtual disk.
+- Reboot and log in.
+- Connect to Wi-Fi/Ethernet.
+- Change display/audio settings.
+- Install and remove an app.
+- Apply a system update.
+- Roll back a failed update.
+- Create and restore a snapshot.
+- Lock and unlock encrypted data.
+- Enter wrong password.
+- Recover with recovery key.
+- Reinstall while preserving test documents.
+- Reinstall while preserving a supported browser profile.
+- Boot recovery USB and export files.
+- Boot and operate with AI disabled.
+- Boot and operate without internet.
+- Simulate disk full and interrupted update.
+- Verify no secret appears in logs.
+
+For every test record:
+- Test ID.
+- Build/commit.
+- Hardware or VM configuration.
+- Steps.
+- Expected result.
+- Actual result.
+- Pass/fail.
+- Logs/evidence.
+- Known limitation.
+
+Release rules:
+- No “100% bug-free” claims.
+- No “unhackable” claims.
+- No “never lose data” claims.
+- Do not call a VM-only build hardware-compatible.
+- Do not release if safe reinstall can silently erase data.
+- Do not release if encryption recovery is untested.
+- Do not ship placeholder buttons as finished features.
+
+======================================================================
+10. SECURITY, PRIVACY AND LEGAL REQUIREMENTS
+======================================================================
+
+- Maintain an inventory of every bundled component and its license.
+- Linux kernel is GPL-2.0-only; comply with applicable source and notice obligations.
+- Preserve copyright notices and third-party license texts.
+- Review licenses of themes, icons, fonts, codecs, drivers and bundled applications.
+- Do not copy proprietary Windows/macOS assets or branding.
+- Use secure update signing and protect signing keys outside the build repository.
+- Separate development, test and release signing keys.
+- Never commit private keys.
+- Use dependency pinning and vulnerability monitoring.
+- Provide a security contact and vulnerability reporting process before public release.
+- Threat-model AI agents, plugins, browser content and document ingestion.
+- Follow a secure software development lifecycle such as NIST SSDF as a reference, adapting it to project scale.
+- Avoid telemetry by default; if any telemetry is proposed, document fields, purpose, retention and opt-in/opt-out behavior.
+- Make data export and deletion understandable.
+- Ensure user consent before external cloud processing.
+
+======================================================================
+11. FIRST PROMPT FOR CLAUDE CODE CLOUD
+======================================================================
+
+Paste the following as the first task after adding this document to the repository:
+
+"You are the engineering agent for CHEENA OS. Read the complete CHEENA OS master workflow and the repository's CLAUDE.md and relevant docs.
+
+Your task is ONLY Phase 0: repository and feasibility audit. Do not start building the full OS yet.
+
+1. Inspect the repository, git status, branches, existing files and prior work. Do not overwrite or delete anything.
+2. Inspect your cloud VM capabilities: operating system, CPU, memory, disk space, privileges, virtualization, loop devices, mount/chroot availability, network access and available build tools.
+3. Verify current official documentation for candidate base distributions, desktop environment, installer, encryption, filesystem, update/rollback and image-building technologies. Prefer upstream official documentation.
+4. Compare Ubuntu 26.04 LTS, Debian 13 and a Fedora-based option briefly. Treat Ubuntu 26.04 LTS as the leading candidate, not a predetermined fact.
+5. Evaluate KDE Plasma on Wayland as the leading desktop candidate.
+6. Evaluate LUKS2 + Btrfs for encrypted storage and safe reinstall. Explain the risks and test requirements.
+7. Evaluate installer options for UEFI, Secure Boot, LUKS2, Btrfs subvolumes and safe data preservation.
+8. Explain which tasks can be completed in this cloud VM and which require a local VM or physical PC.
+9. Create concise architecture decision records, an initial threat model, a test strategy, a risk register and a proposed implementation plan.
+10. Identify licensing obligations and a practical SBOM approach.
+11. Do not install system packages, run privileged commands, alter disks, create partitions, format filesystems, change bootloaders, publish artifacts or expose secrets without explicit user approval.
+12. Do not invent test results or claim a bootable ISO exists unless you actually built and tested it.
+13. Keep output concise but technically complete. Cite official sources in the documentation.
+14. Run only safe, read-only inspection commands during this phase.
+15. Finish with a report: repository state, environment capabilities, recommended architecture, unresolved decisions, created/changed files, tests/checks run, blockers and the exact next task.
+
+Do not implement future AI features or UI mockups during Phase 0. The goal is a verified plan and a safe foundation."
+
+======================================================================
+12. SUBSEQUENT CLAUDE CODE TASK PROMPTS
+======================================================================
+
+Use one task at a time. Do not send all prompts in one session.
+
+Task 1 — Architecture approval:
+"Review Phase 0 findings. Present the final recommended base, desktop, installer, storage, update and build architecture. Explain trade-offs and unresolved risks. Do not implement until the user approves."
+
+Task 2 — Reproducible build foundation:
+"Implement only the approved minimal reproducible image build foundation. Add scripts/configuration, documentation and automated checks. Do not alter host disks. Build an ISO only if the environment safely supports it. Report exact evidence."
+
+Task 3 — Bootable image:
+"Build the smallest bootable CHEENA OS live image from the approved base. Verify image checksum and boot it in an available VM. Do not claim physical hardware support."
+
+Task 4 — Desktop:
+"Implement the approved CHEENA desktop baseline with real launcher, taskbar/dock, file manager and settings integration. No mock data or dead controls. Add tests."
+
+Task 5 — Installer:
+"Implement installer integration only after storage design approval. Add safety checks and tests. Never format or repartition a real disk in cloud. Use disposable virtual disks for tests."
+
+Task 6 — Encryption and recovery:
+"Implement and test LUKS2/recovery-key flows on disposable virtual disks. Verify wrong-password behavior, recovery, logs and secret handling. Do not use real user data."
+
+Task 7 — Safe Reinstall:
+"Implement a safe reinstall proof-of-concept. Test preservation of known test files and selected app data on disposable virtual disks. If disk identification is ambiguous, fail closed."
+
+Task 8 — Application restore:
+"Implement the application inventory/restore manifest and one or two supported app adapters. Do not claim universal restoration."
+
+Task 9 — Basic AI:
+"Implement the optional AI service boundary and permission model. Ensure AI can be fully disabled and the OS remains functional offline. Start with read-only assistance."
+
+Task 10 — Release candidate:
+"Run the complete documented acceptance suite, fix release-blocking issues, generate release notes and checksums, and report all remaining limitations. Do not publish or merge without approval."
+
+======================================================================
+13. IMPORTANT TECHNICAL RISKS AND HONEST LIMITATIONS
+======================================================================
+
+1. Data protection:
+Encryption protects data at rest from unauthorized access when the device is locked, but it does not replace backups. A failed drive can destroy encrypted data too.
+
+2. Password recovery:
+If the user loses the passphrase and every recovery key, encrypted data may be permanently inaccessible. This must be clearly explained during setup.
+
+3. TPM:
+TPM-bound unlocking can improve convenience and device binding, but hardware replacement, firmware reset, Secure Boot changes or TPM clearing can affect unlock behavior. Always provide a separately stored recovery route.
+
+4. Snapshots:
+Snapshots help roll back supported system changes. They are not independent backups and may share the same physical failure domain.
+
+5. App restoration:
+App binaries, package versions, profiles, settings, credentials and user-created files are different categories. Some can be restored automatically; others need reinstall, sign-in or vendor export/import. Test app by app.
+
+6. Cloud coding:
+Claude Code Cloud cannot validate every physical device, firmware, GPU, Wi-Fi adapter, printer or peripheral. Physical testing is mandatory.
+
+7. Drivers:
+NVIDIA, AMD, Intel, Wi-Fi, Bluetooth, fingerprint readers, printers and special peripherals vary by model and firmware.
+
+8. Windows/macOS compatibility:
+Wine/Proton/virtualization can help with selected Windows applications, but do not guarantee all apps. macOS-only applications are especially difficult.
+
+9. AI safety:
+AI can misread content or be manipulated by malicious documents/webpages. Use least privilege, confirmation, action logs and undo where possible.
+
+10. Scope:
+A reliable first release is more valuable than a huge list of unfinished features. Defer features that cannot meet quality and security gates.
+
+======================================================================
+14. OFFICIAL REFERENCE STARTING POINTS
+======================================================================
+
+Use current versions of official documentation during implementation. Verify release versions and URLs again before decisions.
+
+Ubuntu releases and support:
+https://wiki.ubuntu.com/Releases
+https://documentation.ubuntu.com/release-notes/
+https://documentation.ubuntu.com/release-notes/26.04/
+
+Ubuntu 26.04 LTS release announcement:
+https://lists.ubuntu.com/archives/ubuntu-announce/2026-April/000323.html
+
+Claude Code Cloud:
+https://support.claude.com/en/articles/12618689-use-claude-code-in-the-cloud
+
+Claude Code documentation:
+https://docs.anthropic.com/en/docs/claude-code/overview
+
+Calamares installer:
+https://calamares.io/docs/
+
+Btrfs documentation:
+https://btrfs.readthedocs.io/
+
+systemd documentation:
+https://systemd.io/
+
+LUKS / cryptsetup:
+https://gitlab.com/cryptsetup/cryptsetup/-/wikis/home
+
+Fedora bootc documentation (for evaluating image-based update alternatives):
+https://docs.fedoraproject.org/en-US/bootc/
+
+NIST Secure Software Development Framework:
+https://csrc.nist.gov/Projects/ssdf
+
+NIST AI Risk Management Framework:
+https://www.nist.gov/itl/ai-risk-management-framework
+
+======================================================================
+15. DEFINITION OF “FIRST VERSION STARTED SUCCESSFULLY”
+======================================================================
+
+The first development milestone is NOT complete merely because Claude created files or a desktop screenshot.
+
+Phase 0 is complete only when:
+- Repository and cloud environment have been audited.
+- Architecture candidates and risks are documented.
+- No existing work was destroyed.
+- Next implementation task is clearly defined.
+
+The first technical prototype is complete only when:
+- A reproducible image build exists.
+- A live ISO is actually produced.
+- The ISO checksum is recorded.
+- The ISO boots in a VM.
+- The test evidence and limitations are documented.
+
+The first workable release is complete only when:
+- The system installs to a test disk.
+- Desktop and essential hardware functions work on the declared support matrix.
+- Updates and rollback are tested.
+- Encryption and recovery work.
+- Safe Reinstall preserves test user data.
+- Application restoration behavior is accurately reported.
+- AI can be disabled with no loss of core OS functionality.
+- Security and licensing checks are complete for the release scope.
+- Release acceptance tests pass.
+
+END OF MASTER WORKFLOW
