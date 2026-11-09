@@ -9,6 +9,8 @@ linux-generic
 casper
 systemd-sysv
 initramfs-tools
+# zstd: initramfs-tools falls back to gzip without it (seen in CI run 2)
+zstd
 sudo
 locales
 keyboard-configuration

@@ -116,7 +116,8 @@ cp -a "$IMAGE_DIR/overlay/." "$ROOTFS/"
 chmod 0755 "$ROOTFS/usr/lib/cheena/boot-marker.sh"
 
 # os-release: divert the base-files copy so package upgrades don't overwrite it.
-in_chroot dpkg-divert --local --rename --add /usr/lib/os-release
+# --no-rename: base-files is Essential, so its file must never go missing even briefly.
+in_chroot dpkg-divert --local --no-rename --add /usr/lib/os-release
 sed -e "s/@VERSION@/$CHEENA_VERSION/g" -e "s/@CODENAME@/$CHEENA_CODENAME/g" \
     -e "s/@UBUNTU_RELEASE@/$UBUNTU_RELEASE/g" \
     "$IMAGE_DIR/os-release.in" > "$ROOTFS/usr/lib/os-release"
@@ -159,7 +160,9 @@ du -sx --block-size=1 "$ROOTFS" | cut -f1 > "$ISO_ROOT/casper/filesystem.size"
 echo "CHEENA OS $CHEENA_VERSION ($CHEENA_CODENAME) - based on Ubuntu $UBUNTU_RELEASE $ARCH" > "$ISO_ROOT/.disk/info"
 
 log "mksquashfs ($SQUASHFS_COMP level $SQUASHFS_LEVEL)"
-mksquashfs "$ROOTFS" "$ISO_ROOT/casper/filesystem.squashfs" \
+# squashfs-tools refuses SOURCE_DATE_EPOCH together with explicit time options,
+# so drop the variable for this one command and pass the times explicitly.
+env -u SOURCE_DATE_EPOCH mksquashfs "$ROOTFS" "$ISO_ROOT/casper/filesystem.squashfs" \
     -noappend -comp "$SQUASHFS_COMP" -Xcompression-level "$SQUASHFS_LEVEL" \
     -mkfs-time "$SOURCE_DATE_EPOCH" -all-time "$SOURCE_DATE_EPOCH" -no-progress
 
