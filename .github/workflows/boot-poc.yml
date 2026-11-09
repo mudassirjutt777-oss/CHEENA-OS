@@ -1,0 +1,57 @@
+# CHEENA OS Phase 1b: boot-chain and rollback proof of concept in QEMU.
+# Builds a minimal encrypted system into an image file under /tmp and boots it.
+# No real disk is touched. No third-party actions are used.
+name: boot-poc
+
+on:
+  push:
+    branches: ["phase1b/**"]
+    paths:
+      - "tests/boot-poc/**"
+      - ".github/workflows/boot-poc.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: boot-poc-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  boot-poc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Fetch source (public repo, plain git)
+        env:
+          REF: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          git init -q src && cd src
+          git remote add origin "https://github.com/${REPO}.git"
+          git fetch -q --depth 1 origin "$REF"
+          git checkout -q FETCH_HEAD
+          git log --oneline -1
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            debootstrap ubuntu-keyring gdisk dosfstools cryptsetup-bin btrfs-progs \
+            qemu-system-x86 ovmf
+
+      - name: Probe
+        run: |
+          uname -a
+          free -g | head -2
+          df -h /tmp | tail -1
+          ls -l /dev/kvm || echo "no /dev/kvm"
+          ls /usr/share/OVMF/
+
+      - name: Run boot and rollback proof of concept
+        run: sudo --preserve-env=GITHUB_STEP_SUMMARY bash src/tests/boot-poc/run.sh

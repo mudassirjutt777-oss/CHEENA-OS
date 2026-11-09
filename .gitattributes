@@ -5,3 +5,4 @@
 *.in                text eol=lf
 *.yml               text eol=lf
 build/image/**      text eol=lf
+*.py text eol=lf
