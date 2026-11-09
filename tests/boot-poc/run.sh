@@ -35,7 +35,7 @@ WRONG="cheenaWRONG-$(rnd 12)"
 HOME_TOKEN="home-$(rnd 8)"
 ( umask 077; printf '%s' "$PASS" > "$WORK/pass"; printf '%s' "$WRONG" > "$WORK/wrong" )
 
-LOOP=""
+P1=""; P2=""; P3=""
 RESULTS=()
 FAILS=0
 ABORT=""
@@ -45,20 +45,29 @@ try()  { local what="$1"; shift; echo "+ $what"; if "$@"; then return 0; fi; ABO
 
 in_chroot() { chroot "$MNT" /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/root LC_ALL=C.UTF-8 DEBIAN_FRONTEND=noninteractive "$@"; }
 
+# Each partition gets its own loop device (offset + size limit). This avoids
+# relying on kernel partition scanning of loop devices, which was not available
+# on the CI runner.
+part_loop() {
+  local n="$1" start sectors
+  read -r start sectors < <(partx -g -b -o START,SECTORS -n "$n" "$IMG" 2>/dev/null)
+  [ -n "${start:-}" ] && [ -n "${sectors:-}" ] || { echo "partx: no partition $n in image"; return 1; }
+  losetup --find --show --offset $((start*512)) --sizelimit $((sectors*512)) "$IMG"
+}
 img_open() {
-  LOOP="$(losetup --find --show -P "$IMG")" || return 1
-  case "$LOOP" in /dev/loop*) ;; *) echo "refusing: '$LOOP' is not a loop device"; return 1;; esac
-  udevadm settle; local i; for i in 1 2 3 4 5; do [ -b "${LOOP}p3" ] && break; sleep 1; done
-  [ -b "${LOOP}p3" ] || return 1
-  if cryptsetup isLuks "${LOOP}p3" 2>/dev/null; then printf '%s' "$PASS" | cryptsetup open --type luks2 --key-file - "${LOOP}p3" "$MAP" || return 1; fi
+  P1="$(part_loop 1)" && P2="$(part_loop 2)" && P3="$(part_loop 3)" || { echo "attach failed: P1=$P1 P2=$P2 P3=$P3"; return 1; }
+  local d; for d in "$P1" "$P2" "$P3"; do case "$d" in /dev/loop*) ;; *) echo "refusing: '$d' is not a loop device"; return 1;; esac; done
+  if cryptsetup isLuks "$P3" 2>/dev/null; then printf '%s' "$PASS" | cryptsetup open --type luks2 --key-file - "$P3" "$MAP" || return 1; fi
+  return 0
 }
 img_close() {
-  local i
+  local i d
   mountpoint -q "$TOP" && umount "$TOP"
   if mountpoint -q "$MNT"; then umount -R "$MNT" 2>/dev/null || { sleep 2; umount -R "$MNT" 2>/dev/null || umount -Rl "$MNT"; }; fi
   for i in 1 2 3 4 5 6; do [ -e "/dev/mapper/$MAP" ] || break; cryptsetup close "$MAP" 2>/dev/null && break; sleep 2; done
   [ -e "/dev/mapper/$MAP" ] && { echo "could not close $MAP"; return 1; }
-  [ -n "$LOOP" ] && losetup -d "$LOOP"; LOOP=""
+  for d in "$P1" "$P2" "$P3"; do [ -n "$d" ] && losetup -d "$d" 2>/dev/null; done
+  P1=""; P2=""; P3=""
   sync; return 0
 }
 trap 'img_close >/dev/null 2>&1' EXIT
@@ -67,8 +76,8 @@ tree_mount() {
   mount -o subvol=@ "/dev/mapper/$MAP" "$MNT" || return 1
   mkdir -p "$MNT/home" "$MNT/boot"
   mount -o subvol=@home "/dev/mapper/$MAP" "$MNT/home" || return 1
-  mount "${LOOP}p2" "$MNT/boot" || return 1
-  mkdir -p "$MNT/boot/efi"; mount "${LOOP}p1" "$MNT/boot/efi" || return 1
+  mount "$P2" "$MNT/boot" || return 1
+  mkdir -p "$MNT/boot/efi"; mount "$P1" "$MNT/boot/efi" || return 1
 }
 bind_mounts() {
   mkdir -p "$MNT/dev" "$MNT/proc" "$MNT/sys"
@@ -79,7 +88,7 @@ kernels() { ls -1 "$MNT"/boot/vmlinuz-* 2>/dev/null | sed 's#.*/vmlinuz-##' | LC
 
 # write_grub_cfg <default kernel> [other kernels...]  -> first argument boots by default
 write_grub_cfg() {
-  local boot_uuid k; boot_uuid="$(blkid -p -s UUID -o value "${LOOP}p2")"
+  local boot_uuid k; boot_uuid="$(blkid -p -s UUID -o value "$P2")"
   {
     echo 'serial --unit=0 --speed=115200'
     echo 'terminal_input serial console'
@@ -119,18 +128,18 @@ main_flow() {
   truncate -s 10G "$IMG"
   try "partition image" sgdisk -q -n1:0:+512M -t1:ef00 -c1:ESP -n2:0:+1G -t2:8300 -c2:CHEENA-BOOT -n3:0:0 -t3:8309 -c3:CHEENA-VAULT "$IMG" || return 1
   try "attach image" img_open || return 1
-  try "mkfs ESP" mkfs.vfat -F32 -n ESP "${LOOP}p1" || return 1
-  try "mkfs boot" mkfs.ext4 -q -L CHEENA-BOOT "${LOOP}p2" || return 1
+  try "mkfs ESP" mkfs.vfat -F32 -n ESP "$P1" || return 1
+  try "mkfs boot" mkfs.ext4 -q -L CHEENA-BOOT "$P2" || return 1
   echo "+ luksFormat vault (Argon2id)"
-  printf '%s' "$PASS" | cryptsetup luksFormat --type luks2 --batch-mode --label CHEENA-VAULT "${PBKDF_OPTS[@]}" --key-file - "${LOOP}p3" || { ABORT="luksFormat"; return 1; }
-  printf '%s' "$PASS" | cryptsetup open --type luks2 --key-file - "${LOOP}p3" "$MAP" || { ABORT="luks open"; return 1; }
+  printf '%s' "$PASS" | cryptsetup luksFormat --type luks2 --batch-mode --label CHEENA-VAULT "${PBKDF_OPTS[@]}" --key-file - "$P3" || { ABORT="luksFormat"; return 1; }
+  printf '%s' "$PASS" | cryptsetup open --type luks2 --key-file - "$P3" "$MAP" || { ABORT="luks open"; return 1; }
   try "mkfs btrfs" mkfs.btrfs -q -L cheena-pool "/dev/mapper/$MAP" || return 1
   mount -o subvolid=5 "/dev/mapper/$MAP" "$TOP" || { ABORT="mount top"; return 1; }
   for sv in @ @home @snapshots; do btrfs subvolume create "$TOP/$sv" >/dev/null; done
   umount "$TOP"
-  LUKS_UUID="$(cryptsetup luksUUID "${LOOP}p3")"
-  BOOT_UUID="$(blkid -p -s UUID -o value "${LOOP}p2")"
-  ESP_UUID="$(blkid -p -s UUID -o value "${LOOP}p1")"
+  LUKS_UUID="$(cryptsetup luksUUID "$P3")"
+  BOOT_UUID="$(blkid -p -s UUID -o value "$P2")"
+  ESP_UUID="$(blkid -p -s UUID -o value "$P1")"
 
   log "debootstrap $SUITE (minbase, release pocket only)"
   mount -o subvol=@ "/dev/mapper/$MAP" "$MNT" || { ABORT="mount @"; return 1; }
