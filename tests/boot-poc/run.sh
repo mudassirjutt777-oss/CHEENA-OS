@@ -48,11 +48,12 @@ in_chroot() { chroot "$MNT" /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin H
 # Each partition gets its own loop device (offset + size limit). This avoids
 # relying on kernel partition scanning of loop devices, which was not available
 # on the CI runner.
+# Fixed layout of the 10 GiB image, in 512-byte sectors: start and size per partition.
+PART_START=(0 2048 1050624 3147776)
+PART_SIZE=(0 1048576 2097152 17821696)
 part_loop() {
-  local n="$1" start sectors
-  read -r start sectors < <(partx -g -b -o START,SECTORS -n "$n" "$IMG" 2>/dev/null)
-  [ -n "${start:-}" ] && [ -n "${sectors:-}" ] || { echo "partx: no partition $n in image"; return 1; }
-  losetup --find --show --offset $((start*512)) --sizelimit $((sectors*512)) "$IMG"
+  local n="$1"
+  losetup --find --show --offset $((PART_START[n]*512)) --sizelimit $((PART_SIZE[n]*512)) "$IMG"
 }
 img_open() {
   P1="$(part_loop 1)" && P2="$(part_loop 2)" && P3="$(part_loop 3)" || { echo "attach failed: P1=$P1 P2=$P2 P3=$P3"; return 1; }
@@ -126,7 +127,8 @@ main_flow() {
 
   log "disk image and partitions"
   truncate -s 10G "$IMG"
-  try "partition image" sgdisk -q -n1:0:+512M -t1:ef00 -c1:ESP -n2:0:+1G -t2:8300 -c2:CHEENA-BOOT -n3:0:0 -t3:8309 -c3:CHEENA-VAULT "$IMG" || return 1
+  try "partition image" sgdisk       -n 1:${PART_START[1]}:$((PART_START[1]+PART_SIZE[1]-1)) -t 1:ef00 -c 1:ESP       -n 2:${PART_START[2]}:$((PART_START[2]+PART_SIZE[2]-1)) -t 2:8300 -c 2:CHEENA-BOOT       -n 3:${PART_START[3]}:$((PART_START[3]+PART_SIZE[3]-1)) -t 3:8309 -c 3:CHEENA-VAULT "$IMG" || return 1
+  sgdisk -p "$IMG" | tail -5
   try "attach image" img_open || return 1
   try "mkfs ESP" mkfs.vfat -F32 -n ESP "$P1" || return 1
   try "mkfs boot" mkfs.ext4 -q -L CHEENA-BOOT "$P2" || return 1
