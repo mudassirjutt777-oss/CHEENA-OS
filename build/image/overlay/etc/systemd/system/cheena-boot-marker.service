@@ -1,0 +1,11 @@
+[Unit]
+Description=CHEENA OS boot-test marker (virtual machines only)
+After=graphical.target sddm.service
+ConditionVirtualization=vm
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/cheena/boot-marker.sh
+
+[Install]
+WantedBy=graphical.target
