@@ -1,0 +1,33 @@
+# CHEENA OS Phase 1a package set: the smallest live image that reaches a
+# KDE Plasma (Wayland) login screen. Installed with --no-install-recommends.
+# One package per line; '#' starts a comment.
+# Package names are not yet proven against the 26.04 archive. The first CI
+# run will confirm or correct them, and the result goes in the evidence.
+
+# Boot / live system
+linux-generic
+casper
+systemd-sysv
+initramfs-tools
+sudo
+locales
+keyboard-configuration
+console-setup
+dbus-user-session
+polkitd
+
+# Hardware / networking / audio basics
+network-manager
+pipewire
+pipewire-pulse
+wireplumber
+
+# Desktop (ADR-002: KDE Plasma, Wayland)
+sddm
+plasma-desktop
+plasma-workspace
+kwin-wayland
+xwayland
+konsole
+dolphin
+fonts-noto-core
