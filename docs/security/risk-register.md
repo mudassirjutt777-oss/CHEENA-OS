@@ -10,7 +10,7 @@ L = likelihood, I = impact (H/M/L). Review this at every phase gate.
 | R-04 | User loses passphrase and recovery key | M | H | Mandatory key confirmation, export options, clear warning | Product | Open |
 | R-05 | No AMD/NVIDIA test hardware → false claims | H | M | Hardware matrix shows only tested entries | Owner | **Open: hardware needed** |
 | R-06 | Build environment too small or unprivileged | M | M | **GitHub Actions chosen (2026-11-09).** Reclaim disk, prove KVM in the first run | Owner + agent | Partly mitigated |
-| **R-20** (new) | GitHub Free limits: 500 MB artifact storage, $12/month compute [S19]. A 3–4 GB ISO can't be kept as an artifact | H | M | Boot-test in the same job, upload evidence only. Owner decides on public repo, Release, or external storage | Owner | Open |
+| **R-20** (new) | GitHub Free limits: 500 MB artifact storage, $12/month compute [S19]. A 3–4 GB ISO can't be kept as an artifact | M | M | Boot-test in the same job, upload evidence only. **Repo made public 2026-11-10**: compute limit lifted for standard runners. Artifact quota for public repos to recheck | Owner | Partly mitigated |
 | R-07 | Testing harms the owner's daily laptop or BitLocker | L | H | Live-USB only, BitLocker key first, no firmware changes without approval | Owner + agent | Open |
 | R-08 | Snap/apt/Flatpak conflicts | M | M | ADR-006 package policy | Architect | Open: owner decision |
 | R-09 | Upstream changes break CHEENA customisations | M | M | Minimal patches, pinned archive snapshots, upstream-first | Architect | Open |

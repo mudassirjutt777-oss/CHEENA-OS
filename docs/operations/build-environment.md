@@ -34,7 +34,13 @@ Status: Phase 0 audit, 9 November 2026. Every item below was checked with **read
 **Decision (owner, 2026-11-09): GitHub Actions is the build host for Phase 1a.**
 
 ## 2a. GitHub Actions constraints that apply to CHEENA
-The repository looks **private**: the unauthenticated GitHub API returns 404 for it. If it is private, these limits apply:
+**Update 2026-11-10: the owner made the repository public.** The public-repo row below now applies: a 4 vCPU / 16 GB runner, with standard-runner minutes not billed. Whether the 500 MB artifact quota applies to public repositories still needs to be checked against S19. The ISO stays out of artifacts until it is.
+
+Consequences of going public:
+- Build logs and artifacts still need a GitHub login to view. The workflow therefore also publishes its key results as check-run annotations, which the public API serves without a login.
+- **No licence is chosen yet (M-03).** Public code without a licence is "all rights reserved": visible, but nobody may legally reuse it. This decision is now more urgent.
+
+The original assessment, written while the repository was private, follows:
 
 | Constraint | Value | Source | Impact on Phase 1a |
 |---|---|---|---|

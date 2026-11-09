@@ -101,6 +101,28 @@ jobs:
           output-file: evidence/sbom.spdx.json
           upload-artifact: false
 
+      # Job logs and artifacts need a GitHub login even on public repos.
+      # Check-run annotations don't, so key results are also published there.
+      - name: Publish results as annotations (readable without login)
+        if: always()
+        run: |
+          enc() { sed -e 's/%/%25/g' -e 's/\r/%0D/g' | sed ':a;N;$!ba;s/\n/%0A/g'; }
+          if [ -s evidence/boot-result.json ]; then
+            echo "::notice title=boot-result.json::$(enc < evidence/boot-result.json)"
+          fi
+          if [ -s evidence/build-info.json ]; then
+            echo "::notice title=build-info.json::$(enc < evidence/build-info.json)"
+          fi
+          if [ -s evidence/probe-after.txt ]; then
+            echo "::notice title=runner probe (after cleanup)::$(enc < evidence/probe-after.txt)"
+          fi
+          if [ "${{ job.status }}" != "success" ]; then
+            for f in evidence/build.log evidence/serial.log; do
+              [ -s "$f" ] || continue
+              echo "::error title=Last 60 lines of $(basename "$f")::$(tail -n 60 "$f" | enc)"
+            done
+          fi
+
       - name: Upload evidence (no ISO)
         if: always()
         uses: actions/upload-artifact@v4
