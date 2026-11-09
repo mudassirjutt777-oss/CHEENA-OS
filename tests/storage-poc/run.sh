@@ -106,7 +106,7 @@ fi
 if [ -z "${FATAL:-}" ]; then
   # ----------------------------------------------------------------------------
   if test_key "$WRONG"; then record ENC-02 FAIL "wrong passphrase was ACCEPTED" ""
-  else record ENC-02 PASS "wrong passphrase refused" ""; fi
+  else record ENC-02 PASS "wrong passphrase refused" "kernel $(uname -r)"; fi
 
   if test_key "$PASS" && test_key "$REC"; then record ENC-03 PASS "passphrase and recovery key each unlock the vault" ""
   else record ENC-03 FAIL "a valid key did not unlock" ""; fi
@@ -153,7 +153,7 @@ if [ -z "${FATAL:-}" ]; then
   sync; close_all
   open_with "$REC" && mount_top
   home_sums > "$WORK/home.after-reinstall"
-  if cmp -s "$WORK/home.before" "$WORK/home.after-reinstall" \
+  if [ "$nfiles" -ge 3 ] && cmp -s "$WORK/home.before" "$WORK/home.after-reinstall" \
      && [ "$(cat "$MNT/@/etc/cheena-version")" = "system-v2" ] \
      && [ "$(cryptsetup luksUUID "$LOOP")" = "$LUKS_UUID_0" ] \
      && [ "$(blkid -p -s UUID -o value "/dev/mapper/$MAP")" = "$FS_UUID_0" ]; then
@@ -240,7 +240,7 @@ echo "### results"
 
 # One annotation with every result, readable through the public API without a login.
 summary=""
-for r in "${RESULTS[@]}"; do IFS='|' read -r id st what detail <<<"$r"; summary+="$id=$st; "; done
+for r in "${RESULTS[@]}"; do IFS='|' read -r id st what detail <<<"$r"; summary+="$id=$st${detail:+ [$detail]}; "; done
 if [ $FAILS -eq 0 ]; then echo "::notice title=storage-poc results::$summary"
 else echo "::error title=storage-poc results ($FAILS failed)::$summary"; fi
 for r in "${RESULTS[@]}"; do
