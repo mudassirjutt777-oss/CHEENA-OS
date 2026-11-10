@@ -83,9 +83,19 @@ log "debootstrap $UBUNTU_RELEASE from $ARCHIVE_URL"
 # explicitly lets an older host debootstrap build a newer release.
 # ca-certificates: apt inside the chroot fetches the HTTPS snapshot URL.
 # ubuntu-keyring: provides the Signed-By key used in ubuntu.sources below.
-debootstrap --arch="$ARCH" --variant=minbase --components="$COMPONENTS" \
-    --include=ca-certificates,ubuntu-keyring \
-    "$UBUNTU_RELEASE" "$ROOTFS" "$ARCHIVE_URL" /usr/share/debootstrap/scripts/gutsy
+# Retry: CI run 5 failed once fetching the Release file from snapshot.ubuntu.com,
+# and the archive answered normally minutes later.
+for attempt in 1 2 3; do
+    if debootstrap --arch="$ARCH" --variant=minbase --components="$COMPONENTS" \
+        --include=ca-certificates,ubuntu-keyring \
+        "$UBUNTU_RELEASE" "$ROOTFS" "$ARCHIVE_URL" /usr/share/debootstrap/scripts/gutsy; then
+        break
+    fi
+    if (( attempt == 3 )); then echo "debootstrap failed 3 times" >&2; exit 1; fi
+    log "debootstrap attempt $attempt failed; retrying in 60 s"
+    rm -rf "$ROOTFS"
+    sleep 60
+done
 
 bind_mounts
 
@@ -107,8 +117,8 @@ EOF
 # ---------------------------------------------------------------- 2. packages
 mapfile -t PKGS < <(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$IMAGE_DIR/packages.txt" | grep -v '^$')
 log "installing ${#PKGS[@]} packages (no recommends)"
-in_chroot apt-get update
-in_chroot apt-get install -y --no-install-recommends "${PKGS[@]}"
+in_chroot apt-get -o Acquire::Retries=5 update
+in_chroot apt-get -o Acquire::Retries=5 install -y --no-install-recommends "${PKGS[@]}"
 
 # ---------------------------------------------------------------- 3. CHEENA overlay
 log "applying CHEENA overlay"
