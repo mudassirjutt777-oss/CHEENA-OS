@@ -91,8 +91,14 @@ jobs:
       - name: Boot test (QEMU, UEFI, Secure Boot off)
         run: |
           iso="$(ls "${{ steps.workdir.outputs.dir }}"/out/*.iso)"
-          ls -l /dev/kvm || true
-          bash build/scripts/boot-test.sh "$iso" evidence
+          # Runs 3 and 4: /dev/kvm was 0666 at the probe but the boot test fell back
+          # to TCG. Record its state after the build, restore it, and refuse to
+          # fall back silently.
+          { echo "after build: $(ls -l /dev/kvm 2>&1)"; id; } > evidence/kvm-state.txt
+          sudo chmod 0666 /dev/kvm || true
+          echo "before boot: $(ls -l /dev/kvm 2>&1)" >> evidence/kvm-state.txt
+          cat evidence/kvm-state.txt
+          CHEENA_REQUIRE_KVM=1 bash build/scripts/boot-test.sh "$iso" evidence
 
       - name: Generate SBOM from the image root filesystem
         if: success()
@@ -115,6 +121,9 @@ jobs:
           fi
           if [ -s evidence/build-info.json ]; then
             echo "::notice title=build-info.json::$(enc < evidence/build-info.json)"
+          fi
+          if [ -s evidence/kvm-state.txt ]; then
+            echo "::notice title=kvm-state.txt::$(enc < evidence/kvm-state.txt)"
           fi
           if [ -s evidence/probe-after.txt ]; then
             echo "::notice title=runner probe (after cleanup)::$(enc < evidence/probe-after.txt)"

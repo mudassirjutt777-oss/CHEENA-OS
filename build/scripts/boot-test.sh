@@ -24,6 +24,9 @@ OVMF_VARS_SRC=/usr/share/OVMF/OVMF_VARS_4M.fd
 
 if [[ -w /dev/kvm ]]; then
     ACCEL=kvm; CPU=host; TIMEOUT="${TIMEOUT:-600}"
+elif [[ "${CHEENA_REQUIRE_KVM:-0}" == "1" ]]; then
+    echo "KVM required (CHEENA_REQUIRE_KVM=1) but /dev/kvm is not writable: $(ls -l /dev/kvm 2>&1)" >&2
+    exit 3
 else
     ACCEL=tcg; CPU=max; TIMEOUT="${TIMEOUT:-2400}"
 fi

@@ -7,6 +7,13 @@ One row per `image-build` run, recording only what the run actually showed.
 | [42581421390](https://github.com/mudassirjutt777-oss/CHEENA-OS/actions/runs/42581421390) | 8710506 | ✗ | Build ISO (~11 min in) | Unknown: logs need a login, and the repo was private at the time | Added login-free annotations (acfea7f) |
 | [42692379459](https://github.com/mudassirjutt777-oss/CHEENA-OS/actions/runs/42692379459) | acfea7f | ✗ | Build ISO → `mksquashfs` | `FATAL ERROR: SOURCE_DATE_EPOCH and command line options can't be used at the same time` | Unset the variable for mksquashfs only. Also added `zstd` and used `dpkg-divert --no-rename` |
 | [42699368379](https://github.com/mudassirjutt777-oss/CHEENA-OS/actions/runs/42699368379) | 8dc5e92 | ✓ (boot test pass) | — | Three issues found, not failures: boot ran under TCG not KVM; `casper-md5check.service` failed; build step took 105 min | KVM step moved after qemu install; `md5sum.txt` added to ISO; squashfs zstd level 15 → 9 |
+| [42770580111](https://github.com/mudassirjutt777-oss/CHEENA-OS/actions/runs/42770580111) | ce74d1e | ✓ (boot test pass) | — | `failed=none` (md5 fix worked). Build step 10.7 min (was 105). **Still `accel=tcg`**: `/dev/kvm` was 0666 at 06:49, but the boot test at 06:59 found it not writable | Record `/dev/kvm` state after the build; restore 0666 before boot; `CHEENA_REQUIRE_KVM=1` so a silent TCG fallback fails the job |
+
+## Facts established by run 42770580111
+- ISO 1,669,455,872 bytes (+35 MB from squashfs level 9), sha256 `5c5975a8…dd84e`. Same 930 packages and kernel.
+- Boot test passed: marker after 145 s, `sddm=active`, **no failed units**. Still TCG, Secure Boot off.
+- Build ISO step: 10 min 40 s. Whole job about 20 min.
+- Open: what changes `/dev/kvm` during the build is not yet known. The next run records it.
 
 ## Facts established by run 42699368379 (first passing run)
 - ISO built: `cheena-os-0.1.0-dev-amd64.iso`, 1,634,115,584 bytes, sha256 `fae506e4…c629b`. squashfs 1,524,817,920 bytes. 930 packages. Kernel `7.0.0-42-generic`.
