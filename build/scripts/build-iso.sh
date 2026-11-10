@@ -183,6 +183,11 @@ menuentry "CHEENA OS (live, safe graphics)" {
 }
 EOF
 
+# casper-md5check verifies the medium against md5sum.txt and fails without it
+# (CI run 3). List every file in the tree; grub-mkrescue's own files are not listed.
+( cd "$ISO_ROOT" && find . -type f ! -name md5sum.txt -print0 | LC_ALL=C sort -z \
+    | xargs -0 md5sum > md5sum.txt )
+
 # ---------------------------------------------------------------- 7. ISO
 ISO_NAME="cheena-os-${CHEENA_VERSION}-${ARCH}.iso"
 log "building $ISO_NAME"

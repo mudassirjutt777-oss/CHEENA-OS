@@ -6,6 +6,15 @@ One row per `image-build` run, recording only what the run actually showed.
 |---|---|---|---|---|---|
 | [42581421390](https://github.com/mudassirjutt777-oss/CHEENA-OS/actions/runs/42581421390) | 8710506 | ✗ | Build ISO (~11 min in) | Unknown: logs need a login, and the repo was private at the time | Added login-free annotations (acfea7f) |
 | [42692379459](https://github.com/mudassirjutt777-oss/CHEENA-OS/actions/runs/42692379459) | acfea7f | ✗ | Build ISO → `mksquashfs` | `FATAL ERROR: SOURCE_DATE_EPOCH and command line options can't be used at the same time` | Unset the variable for mksquashfs only. Also added `zstd` and used `dpkg-divert --no-rename` |
+| [42699368379](https://github.com/mudassirjutt777-oss/CHEENA-OS/actions/runs/42699368379) | 8dc5e92 | ✓ (boot test pass) | — | Three issues found, not failures: boot ran under TCG not KVM; `casper-md5check.service` failed; build step took 105 min | KVM step moved after qemu install; `md5sum.txt` added to ISO; squashfs zstd level 15 → 9 |
+
+## Facts established by run 42699368379 (first passing run)
+- ISO built: `cheena-os-0.1.0-dev-amd64.iso`, 1,634,115,584 bytes, sha256 `fae506e4…c629b`. squashfs 1,524,817,920 bytes. 930 packages. Kernel `7.0.0-42-generic`.
+- Boot test `TS-boot-live-uefi-sb-off` **passed**: QEMU q35 + OVMF, Secure Boot **off**, `accel=tcg`, 2 vCPU, 3 GB. The serial marker appeared after 145 s with `sddm=active`.
+- At marker time systemd reported `starting` (not yet `running`), and the one failed unit was `casper-md5check.service` (no `md5sum.txt` on the ISO).
+- `/dev/kvm` was writable at the probe, but the boot test fell back to TCG. Most likely cause: installing `qemu-system-x86` re-applied udev rules after our KVM rule ran.
+- Timing: Build ISO step 105 min (21:08 → 22:54 UTC), boot test 3 min, SBOM 2 min.
+- Not proven: what SDDM showed on screen. The screenshot is in the evidence artifact, which needs a GitHub login to download. Secure Boot, real hardware, installer: not tested.
 
 ## Facts established by run 42692379459
 - The runner (public repo) is Ubuntu 24.04.5, kernel 7.0.0-1017-azure, 4× AMD EPYC 7763, 15 GiB RAM, **114 GB free disk** after cleanup, **`/dev/kvm` writable**, loop devices present, passwordless sudo.
