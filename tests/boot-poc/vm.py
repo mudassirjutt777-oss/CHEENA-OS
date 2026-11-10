@@ -14,7 +14,8 @@ import sys
 import time
 
 PROMPT = b"Please unlock disk"
-MARKER = re.compile(rb"CHEENA-BOOT-OK[^\r\n]*")
+# Match only a complete line: serial output arrives in arbitrary chunks.
+MARKER = re.compile(rb"(CHEENA-BOOT-OK[^\r\n]*)[\r\n]")
 BAD = [
     (b"emergency mode", "emergency"),
     (b"root account is locked", "emergency"),
@@ -86,7 +87,7 @@ def main():
 
             m = MARKER.search(buf)
             if m and not marker:
-                marker = m.group(0).decode("ascii", "replace")
+                marker = m.group(1).decode("ascii", "replace")
                 status = "ok"
                 # give the guest time to power off by itself
                 try:
